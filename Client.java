@@ -9,35 +9,33 @@ import java.util.Objects;
 
 @SuppressWarnings("deprecation")
 class Client {
-
-    private Socket socketToServer;
-    private SocketUtil IO;
+    private SocketUtil SU;
     private JFrame frame;
     private String CURRENT_USER="";
     private JTextField password, firstname, lastname, DOB, homephone, cellphone, email;
     private JLabel userTest;
     private JComboBox<String> username, admin;
     private boolean admincheck=false;
+    private Socket ServerSocket;
 
     public static void main(String[] arg) {
         new Client();
     }
 
     private Client() {
-        buildGUI();//builds the frame
+        makescreen();
 
-        makeConnection();//starts the connection
+        connect();
     }
 
-    private void loadGUI_Password() {
-        if (frame==null)//checks to make sure the frame is there
+    private void pass() {
+        if (frame==null)
             return;
 
-        //making and loading in the login panel
-        JPanel LoginPanel = new JPanel();
-        frame.setContentPane(LoginPanel);
+        JPanel signin = new JPanel();
+        frame.setContentPane(signin);
         BorderLayout borderLayout = new BorderLayout();
-        LoginPanel.setLayout(borderLayout);
+        signin.setLayout(borderLayout);
 
         //making input panel
         JPanel InputPanel = new JPanel();
@@ -48,10 +46,10 @@ class Client {
         InputPanel.add(username);
 
         InputPanel.add(new JLabel("Password:"));
-        JTextField password = new JTextField(20);
+        JPasswordField password = new JPasswordField(20);
         InputPanel.add(password);
 
-        LoginPanel.add(InputPanel, BorderLayout.NORTH);
+        signin.add(InputPanel, BorderLayout.CENTER);
 
 
         //making submit button
@@ -60,59 +58,59 @@ class Client {
             if (!username.getText().isEmpty() && !password.getText().isEmpty()) 
             {
                System.out.println(username.getText() + "," + password.getText());
-               IO.write("LOGIN`"+username.getText() + "," + password.getText());
+               SU.write("LOGIN`"+username.getText() + "," + password.getText());
                
-               		switch (IO.read()){
+               		switch (SU.read()){
                         case "-1":
                             CURRENT_USER = "";
                             JOptionPane.showMessageDialog(null,"Couldnt Log In. PLease Try again!", "Unable to login", JOptionPane.WARNING_MESSAGE);
-                            loadGUI_Password();
+                            pass();
                             break;
                             
                         case "1":
                             CURRENT_USER = username.getText();
-                            JOptionPane.showMessageDialog(null,"Welcome to the Membership Portal", "Signed In", JOptionPane.INFORMATION_MESSAGE);
-                            loadGUI_DashBoard(false);
+                            JOptionPane.showMessageDialog(null,"Welcome to the Membership Portal!", "Signed In", JOptionPane.INFORMATION_MESSAGE);
+                            mainscreen(false);
                             admincheck=false;
                             break;
                             
                         case "2":
                             CURRENT_USER = username.getText();
-                            JOptionPane.showMessageDialog(null,"Welcome Admin", "Logged In", JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.showMessageDialog(null,"Successful Login to Admin User!", "Logged In", JOptionPane.INFORMATION_MESSAGE);
                             admincheck=true;
-                            loadGUI_AdminDashboard();
+                            makeadmin();
                             break;
                         default:
                             JOptionPane.showMessageDialog(null,
-                                    "Unknown reply from server", "ERROR", JOptionPane.ERROR_MESSAGE);
+                                    "Error From The Server", "ERROR", JOptionPane.ERROR_MESSAGE);
                     }
             }else {
                 JOptionPane.showMessageDialog(null,
                         "username or password is empty, try again", "WARNING", JOptionPane.WARNING_MESSAGE);
             }
         });
-        LoginPanel.add(submit, BorderLayout.SOUTH);
+        signin.add(submit, BorderLayout.SOUTH);
 
-        frame.setContentPane(LoginPanel);
+        frame.setContentPane(signin);
         frame.pack();
     }
 
-    private void loadGUI_DashBoard(boolean EDIT) {
+    private void mainscreen(boolean EDIT) {
         if (frame==null)//checks to make sure the frame is there
             return;
 
         //making and loading in the login panel
-        JPanel Panel = new JPanel();
-        frame.setContentPane(Panel);
+        JPanel JP = new JPanel();
+        frame.setContentPane(JP);
         BorderLayout borderLayout = new BorderLayout();
-        Panel.setLayout(borderLayout);
+        JP.setLayout(borderLayout);
 
         if (admincheck) {
             //top search field
             JPanel InputPanel = new JPanel();
             GridLayout gridLayout = new GridLayout(1,3);
             InputPanel.setLayout(gridLayout);
-            InputPanel.setBorder(BorderFactory.createTitledBorder("Search for users to view"));
+            InputPanel.setBorder(BorderFactory.createTitledBorder("Look Up Users"));
 
             InputPanel.add(new JLabel("Enter Username:"));
             username = getUsers();
@@ -120,78 +118,77 @@ class Client {
             username.addActionListener(e -> setUser(String.valueOf(username.getSelectedItem()), EDIT));
             InputPanel.add(username);
 
-            Panel.add(InputPanel, BorderLayout.NORTH);
+            JP.add(InputPanel, BorderLayout.NORTH);
         }
 
 
         //center account info
-        JPanel info = new JPanel();
+        JPanel memberstuff = new JPanel();
         GridLayout gridLayout1 = new GridLayout(7,1);
-        info.setLayout(gridLayout1);
-        info.setBorder(BorderFactory.createTitledBorder("Selected user info"));
+        memberstuff.setLayout(gridLayout1);
+        memberstuff.setBorder(BorderFactory.createTitledBorder("Selected user info"));
 
         JPanel userFor = new JPanel();
         userTest = new JLabel("Showing info for \""+(username!= null && !String.valueOf(username.getSelectedItem()).equals(CURRENT_USER)? String.valueOf(username.getSelectedItem()): CURRENT_USER)+"\"");
         userFor.add(userTest);
         userFor.setBorder(BorderFactory.createBevelBorder(4));
-        info.add(userFor);
+        memberstuff.add(userFor);
 
         JPanel infoin = new JPanel();
         if (admincheck) {
             infoin.add(new JLabel("Is Admin:"));
             admin = new JComboBox<>();
-            admin.addItem("yes");
-            admin.addItem("no");
+            admin.addItem("Y");
+            admin.addItem("N");
             infoin.add(admin);
-            info.add(infoin);
+            memberstuff.add(infoin);
         }
 
         infoin = new JPanel();
         infoin.add(new JLabel("Password:"));
-        password = new JTextField(30);
+        password = new JTextField(25);
         infoin.add(password);
-        info.add(infoin);
+        memberstuff.add(infoin);
 
         infoin = new JPanel();
         infoin.add(new JLabel("First Name:"));
-        firstname = new JTextField(30);
+        firstname = new JTextField(25);
         infoin.add(firstname);
-        info.add(infoin);
+        memberstuff.add(infoin);
 
         infoin = new JPanel();
         infoin.add(new JLabel("Last Name:"));
-        lastname = new JTextField(30);
+        lastname = new JTextField(25);
         infoin.add(lastname);
-        info.add(infoin);
+        memberstuff.add(infoin);
 
         infoin = new JPanel();
         infoin.add(new JLabel("DOB:"));
-        DOB = new JTextField(10);//TODO make a j date picker
+        DOB = new JTextField(10);
         DOB.setToolTipText("yyyy-mm-dd");
         infoin.add(DOB);
-        info.add(infoin);
+        memberstuff.add(infoin);
 
         infoin = new JPanel();
         infoin.add(new JLabel("Home Phone:"));
-        homephone = new JTextField(12);
+        homephone = new JTextField(10);
         //noinspection SpellCheckingInspection
         homephone.setToolTipText("123-456-7890");
         infoin.add(homephone);
-        info.add(infoin);
+        memberstuff.add(infoin);
 
         infoin = new JPanel();
         infoin.add(new JLabel("Cell Phone:"));
-        cellphone = new JTextField(12);
-        //noinspection SpellCheckingInspection
+        cellphone = new JTextField(10);
         cellphone.setToolTipText("123-456-7890");
         infoin.add(cellphone);
-        info.add(infoin);
+        memberstuff.add(infoin);
 
         infoin = new JPanel();
         infoin.add(new JLabel("Email:"));
-        email = new JTextField(30);
+        email = new JTextField(40);
         infoin.add(email);
-        info.add(infoin);
+        memberstuff.add(infoin);
 
         if (!EDIT) {
             password.setEnabled(false);
@@ -203,11 +200,21 @@ class Client {
             email.setEditable(false);
         }
 
-        Panel.add(info);
-
-
-        //Submit, Log out, and back
+        JP.add(memberstuff);
+        
         JPanel logoutP = new JPanel();
+        
+
+        if (EDIT){
+            JButton back = new JButton("Back");
+            back.addActionListener(e -> makeadmin());
+            logoutP.add(back);
+        }
+
+        JButton logout = new JButton("Log out");
+        logout.addActionListener(e -> pass());
+        logoutP.add(logout);
+        
         if (EDIT) {
             JButton submit = new JButton("Submit");
             submit.addActionListener(e -> editUser(
@@ -223,20 +230,10 @@ class Client {
                     EDIT));
             logoutP.add(submit);
         }
+        
+        JP.add(logoutP, BorderLayout.SOUTH);
 
-        if (EDIT){//back for admin
-            JButton back = new JButton("Back");
-            back.addActionListener(e -> loadGUI_AdminDashboard());
-            logoutP.add(back);
-        }
-
-        JButton logout = new JButton("Log out");
-        logout.addActionListener(e -> loadGUI_Password());
-        logoutP.add(logout);
-
-        Panel.add(logoutP, BorderLayout.SOUTH);
-
-        frame.setContentPane(Panel);
+        frame.setContentPane(JP);
         frame.pack();
 
         if (!EDIT)//sets the current user info for normal users
@@ -249,10 +246,10 @@ class Client {
             return;
         }
 
-        IO.write("GET_USER`"+user);
+        SU.write("GET_USER`"+user);
 
         //tests to see if the user was deleted
-        String answer = IO.read();
+        String answer = SU.read();
         if (answer.equals("-1"))
             JOptionPane.showMessageDialog(null,"The user ("+user+") can not be edited.", "Editing User", JOptionPane.ERROR_MESSAGE);
 
@@ -282,36 +279,35 @@ class Client {
             String a =
                     "EDIT_USER`UPDATE cmb45.USER SET " +
                             (!password.equals(" ")? ("password='"+password+"', "): "") +
-                            (!firstNameText.equals(" ")? ("firstName='"+firstNameText+"', "): "") +
-                            (!lastNameText.equals(" ")? ("lastName='"+lastNameText+"', "): "") +
+                            (!firstNameText.equals(" ")? ("firstname='"+firstNameText+"', "): "") +
+                            (!lastNameText.equals(" ")? ("lastname='"+lastNameText+"', "): "") +
                             (!dobText.equals(" ")? ("DOB='"+dobText+"', "): "") +
-                            (!home_phoneText.equals(" ")? ("home_phone='"+home_phoneText+"', "): "") +
-                            (!cell_phoneText.equals(" ")? ("cell_phone='"+cell_phoneText+"', "): "") +
+                            (!home_phoneText.equals(" ")? ("homephone='"+home_phoneText+"', "): "") +
+                            (!cell_phoneText.equals(" ")? ("cellphone='"+cell_phoneText+"', "): "") +
                             (!emailText.equals(" ")? ("email='"+emailText+"', "): "") +
-                            (!adminText.equals(" ")? ("isAdmin='"+adminText+"', "): "");
-            IO.write( a.substring(0,a.length()-2)+" WHERE userName='"+user+"';");
+                            (!adminText.equals(" ")? ("admin='"+adminText+"', "): "");
+            SU.write( a.substring(0,a.length()-2)+" WHERE username='"+user+"';");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null,"The user ("+user+") has NOT been edited. There was an error because of some of the input. Please try again", "Edited", JOptionPane.ERROR_MESSAGE);
         }
 
         //tests to see if the user was deleted
-        if (IO.read().equals("1"))
+        if (SU.read().equals("1"))
             JOptionPane.showMessageDialog(null,"The user ("+user+") has been edited.", "Edited", JOptionPane.INFORMATION_MESSAGE);
         else
             JOptionPane.showMessageDialog(null,"The user ("+user+") has NOT been edited.", "Edited", JOptionPane.ERROR_MESSAGE);
 
         //updating GUI
-        loadGUI_DashBoard(EDIT);
+        mainscreen(EDIT);
     }
 
-    @SuppressWarnings("EmptyMethod")
     private JComboBox<String> getUsers() {
         JComboBox<String> box = new JComboBox<>();
 
         //getting users
-        IO.write("GET_USERS`0");
+        SU.write("GET_USERS`0");
 
-        String[] users = IO.read().split(",");
+        String[] users = SU.read().split(",");
 
         for (String user:users){
             box.addItem(user);
@@ -320,11 +316,11 @@ class Client {
         return box;
     }
 
-    private void loadGUI_AdminDashboard() {
+    private void makeadmin() {
         if (frame==null)//checks to make sure the frame is there
             return;
 
-        //making and loading in the login panel
+
         JPanel Panel = new JPanel();
         frame.setContentPane(Panel);
         BorderLayout borderLayout = new BorderLayout();
@@ -334,39 +330,37 @@ class Client {
         BoxLayout boxLayout = new BoxLayout(contents, BoxLayout.Y_AXIS);
         contents.setLayout(boxLayout);
 
-        //editing info for the select user button
         JButton edit = new JButton("Edit Users");
-        edit.addActionListener(e -> loadGUI_DashBoard(true));
+        edit.addActionListener(e -> mainscreen(true));
         contents.add(edit);
 
-
-        //add user button
         JPanel inner = new JPanel();
-        inner.setBorder(BorderFactory.createTitledBorder("Add new user"));
-        inner.add(new JLabel("Enter new user's username:"));
+        inner.setBorder(BorderFactory.createTitledBorder("Add a member to the site"));
+        inner.add(new JLabel("Enter a username for the Member"));
         JTextField newUser = new JTextField(30);
         inner.add(newUser);
+        inner.add(new JLabel("Enter new user's password:"));
+        JPasswordField newPassword = new JPasswordField(30);
+        inner.add(newPassword);
         JButton add = new JButton("Add User");
-        add.addActionListener(e -> addUser(newUser.getText()));
+        add.addActionListener(e -> add(newUser.getText(), newPassword.getText()));
         inner.add(add);
         contents.add(inner);
 
 
-        //delete user combo box
         inner = new JPanel();
         inner.setBorder(BorderFactory.createTitledBorder("Select user to delete"));
         inner.add(new JLabel("Select Username:"));
         JComboBox<String> username = getUsers();
-        username.addActionListener(e -> deleteUser(String.valueOf(username.getSelectedItem())));
+        username.addActionListener(e -> delete(String.valueOf(username.getSelectedItem())));
         inner.add(username);
         contents.add(inner);
 
         Panel.add(contents, BorderLayout.CENTER);
 
-        //Log out
         JPanel logoutP = new JPanel();
         JButton logout = new JButton("Log out");
-        logout.addActionListener(e -> loadGUI_Password());
+        logout.addActionListener(e -> pass());
         logoutP.add(logout);
 
         Panel.add(logoutP, BorderLayout.SOUTH);
@@ -375,84 +369,77 @@ class Client {
         frame.pack();
     }
 
-    private void addUser(String user) {
+    private void add(String user, String password) {
         if (user.equals("")){
             JOptionPane.showMessageDialog(null,"The username has been has not been entered. Please try again", "Added", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        IO.write("ADD_USERS`"+user);
+        SU.write("ADD_USERS`'"+user+"','"+password+"'");
 
-        //tests to see if the user was deleted
-        if (IO.read().equals("1"))
-            JOptionPane.showMessageDialog(null,"The user ("+user+") has been added. default password is 'password123'.", "Added", JOptionPane.INFORMATION_MESSAGE);
+        if (SU.read().equals("1"))
+            JOptionPane.showMessageDialog(null,"The user ("+user+") has been added.", "ADD", JOptionPane.INFORMATION_MESSAGE);
         else
-            JOptionPane.showMessageDialog(null,"The user ("+user+") has NOT been added.", "Added", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null,"The user ("+user+") has NOT been added.", "ADD", JOptionPane.ERROR_MESSAGE);
 
-        //updating GUI
-        loadGUI_AdminDashboard();
+        makeadmin();
     }
 
-    private void deleteUser(String user) {
-        if (user.equals(CURRENT_USER)){
+    private void delete(String member) {
+        if (member.equals(CURRENT_USER)){
             JOptionPane.showMessageDialog(null,"You can't delete yourself", "Delete", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        IO.write("REMOVE_USERS`"+user);
+        SU.write("REMOVE_USERS`"+member);
 
         //tests to see if the user was deleted
-        if (IO.read().equals("1"))
-            JOptionPane.showMessageDialog(null,"The user ("+user+") has been deleted.", "Deleted", JOptionPane.INFORMATION_MESSAGE);
+        if (SU.read().equals("1"))
+            JOptionPane.showMessageDialog(null,"The user ("+member+") has been deleted.", "Deleted", JOptionPane.INFORMATION_MESSAGE);
         else
-            JOptionPane.showMessageDialog(null,"The user ("+user+") has NOT been deleted.", "Deleted", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null,"The user ("+member+") has NOT been deleted.", "Deleted", JOptionPane.ERROR_MESSAGE);
 
         //updating GUI
-        loadGUI_AdminDashboard();
+        makeadmin();
     }
 
-    private void buildGUI() {
-        //making the frame
+    private void makescreen() {
+     
         frame = new JFrame("Accounts");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(1000, 400));
         frame.setResizable(false);
 
-        //building and showing the frame
         frame.pack();
         frame.setVisible(true);
     }
 
-    private void makeConnection(){
-        //noinspection SpellCheckingInspection
+    private void connect(){
+        
         try{
-            @SuppressWarnings("unused") DataObject myObject = new DataObject();//new sending object
-            socketToServer = new Socket("afsaccess1.njit.edu", 4009);//making the connection
-            //afsaccess2.njit.edu
-
-            IO = new SocketUtil(socketToServer);//making the input and output
-
-            //sending the connection header to the server
+            @SuppressWarnings("unused") DataObject myObject = new DataObject();
+            ServerSocket = new Socket("afsaccess1.njit.edu", 4010);
+            
+            SU = new SocketUtil(ServerSocket);
             String host="UNKNOWN";
             try {
                 host =InetAddress.getByName("www.example.com").getHostAddress();
             } catch (UnknownHostException ignored) {}
-            IO.write("Connecting to Server from: "+host);
+            SU.write("Connecting to Server from: "+host);
 
-            //reading the password request
-            String INPUT=IO.read();
+            String INPUT=SU.read();
                 System.out.println(INPUT);
                 if (INPUT.equals("USERNAME AND PASSWORD?"))
-                    loadGUI_Password();//loads the password content
+                    pass();
                 else{
                     JOptionPane.showMessageDialog(null,
-                            "Logging request expected but not received","ERROR",JOptionPane.ERROR_MESSAGE);
+                            "ERROR WHEN LOGGING IN","ERROR",JOptionPane.ERROR_MESSAGE);
                 }
             } catch (UnknownHostException e1) {
             e1.printStackTrace();
         } catch (ConnectException e){
             JOptionPane.showMessageDialog(null,
-                    "Can't connect to the Server right now so im closing","ERROR",JOptionPane.ERROR_MESSAGE);
+                    "Error, Server is Not Running on Specified Socket.","ERROR",JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
         catch (IOException e1) {
@@ -465,8 +452,8 @@ class Client {
     public void finalize() {
         try {
             try {
-                socketToServer.close();
-                IO.close();
+                ServerSocket.close();
+                SU.close();
                 frame.setVisible(false);
                 frame.dispose();
             } finally {

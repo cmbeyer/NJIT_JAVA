@@ -8,7 +8,7 @@ class ThreadedDataObjectServer {
     public static void main(String[] args ) {
 
         try {
-            ServerSocket s = new ServerSocket(4009);//listening
+            ServerSocket s = new ServerSocket(4010);//listening
 
             //noinspection InfiniteLoopStatement
             while (true) {
@@ -23,79 +23,82 @@ class ThreadedDataObjectServer {
     }
 
     class ThreadedDataObjectHandler extends Thread {
-        @SuppressWarnings("CanBeFinal")
-        private Socket incoming;
-        @SuppressWarnings("FieldCanBeLocal")
-        private SocketUtil IO;
+        
+        private Socket infromcmd;
+        private String member="";
+        private SocketUtil SU;
         private Connection conn;
-        private String USER="";
-        private boolean IS_ADMIN=false;
+       
+        private boolean admincheck=false;
 
 
         ThreadedDataObjectHandler(Socket i){
-            incoming = i;
+            infromcmd = i;
         }
 
         public void run() {
-            IO = new SocketUtil(incoming);
+            SU = new SocketUtil(infromcmd);
 
             //connecting to the DB
-            connectToDB();
+            DBconnect();
 
             //read in header info form client
-            System.out.println("New Connection from: " + IO.read());
+            System.out.println("New Connection from: " + SU.read());
 
             //asking the user to log in
-            IO.write("USERNAME AND PASSWORD?");
+            SU.write("USERNAME AND PASSWORD?");
 
             while(true) {
             	
-                String[] INPUT = IO.read().split("`");
+                String[] inarray = SU.read().split("`");
 
-                System.out.println("CMD input: "+INPUT[0]+" parms: "+INPUT[1]==null? "": INPUT[1]);
-
-                switch (INPUT[0]){//CMD switch
+                System.out.println("CMD input: "+inarray[0]+" parms: "+inarray[1]==null? "": inarray[1]);
+                
+                switch (inarray[0]){//CMD switch
+                
                     case "LOGIN":
-                        System.out.println("CMD: login");
-                        CMD_login(INPUT[1]);
+                        System.out.println("CMD: login  "+inarray[0]+" parms: "+inarray[1]);
+                        signin(inarray[1]);
                         break;
+                        
                     case "EDIT_USER":
                         System.out.println("CMD: edit users");
-                        CMD_EditUser(INPUT[1]);
+                        edit(inarray[1]);
                         break;
                     case "GET_USERS":
                         System.out.println("CMD: get users");
-                        CMD_GetUsers();
+                        getlist();
                         break;
                     case "GET_USER":
                         System.out.println("CMD: get user");
-                        CMD_GetUser(INPUT[1]);
+                        getmember(inarray[1]);
                         break;
                     case "ADD_USERS":
                         System.out.println("CMD: add users");
-                        CMD_AddUser(INPUT[1]);
+                        System.out.println("CMD input: "+inarray[0]+" parms: "+ inarray[1]);
+                        add(inarray[1]);
                         break;
+                        
                     case "REMOVE_USERS":
                         System.out.println("CMD: delete users");
-                        CMD_DeleteUser(INPUT[1]);
+                        delete(inarray[1]);
                         break;
                     default:
-                        IO.write("UNKNOWN CMD");
+                        SU.write("UNKNOWN CMD");
                 }
             }
         }
 
-        private void CMD_GetUser(String input) {
+        private void getmember(String member) {
             String users="";
 
             Statement stmt = null;
             ResultSet rs = null;
             try {
                 stmt=conn.createStatement();
-                rs=stmt.executeQuery("SELECT * FROM cmb45.USER WHERE username='"+input+"';");
+                rs=stmt.executeQuery("SELECT * FROM cmb45.USER WHERE username='"+member+"';");
 
                 rs.next();
-
                 users+=(rs.getString("password").equals("null")? " ":rs.getString("password"))+",";
                 users+=(rs.getString("firstname")==null? " ":rs.getString("firstname"))+",";
                 users+=(rs.getString("lastname")==null? " ":rs.getString("lastname"))+",";
@@ -107,7 +110,7 @@ class ThreadedDataObjectServer {
 
 
             } catch (SQLException e) {
-                IO.write("NO USERS,");
+                SU.write("NO USERS,");
             } finally {
                 try {
                     stmt.close();
@@ -116,10 +119,10 @@ class ThreadedDataObjectServer {
                     e.printStackTrace();
                 }
             }
-            IO.write(users);
+            SU.write(users);
         }
 
-        private void CMD_GetUsers() {
+        private void getlist() {
             String users=",";
 
             Statement stmt = null;
@@ -132,7 +135,7 @@ class ThreadedDataObjectServer {
                     users+=rs.getString("username")+",";
                 }
             } catch (SQLException e) {
-                IO.write("NO USERS,");
+                SU.write("NO USERS,");
             } finally {
                 try {
                     stmt.close();
@@ -141,17 +144,18 @@ class ThreadedDataObjectServer {
                     e.printStackTrace();
                 }
             }
-            IO.write(users);
+            SU.write(users);
         }
 
-        private void CMD_DeleteUser(String input) {
+        private void delete(String member) {
             Statement stmt = null;
+            int result;
             try {
                 stmt=conn.createStatement();
-                int answer=stmt.executeUpdate("DELETE from cmb45.USER WHERE username='"+input+"'");
-                IO.write(answer+"");
+                result=stmt.executeUpdate("DELETE from cmb45.USER WHERE username='"+member+"'");
+                SU.write(result+"");
             } catch (SQLException e) {
-                IO.write("-1");
+                SU.write("-1");
             } finally {
                 try {
                     stmt.close();
@@ -161,14 +165,17 @@ class ThreadedDataObjectServer {
             }
         }
 
-        private void CMD_AddUser(String input) {
+        private void add(String input) {
             Statement stmt = null;
+            
             try {
+            	System.out.println("INSERT INTO cmb45.USER (username, password, admin) VALUES ("+input+", 'N');");
                 stmt=conn.createStatement();
-                int answer=stmt.executeUpdate("INSERT INTO cmb45.USER (username, password, admin) VALUES ('"+input+"', 'password123', 'N');");
-                IO.write(answer+"");
+                int result =stmt.executeUpdate("INSERT INTO cmb45.USER (username, password, admin) VALUES ('"+input+"', 'N');");
+                System.out.println("Result:  "+result);
+                SU.write(result+"");
             } catch (SQLException e) {
-                IO.write("-1");
+                SU.write("-1");
             } finally {
                 try {
                     stmt.close();
@@ -178,16 +185,17 @@ class ThreadedDataObjectServer {
             }
         }
 
-        private void CMD_EditUser(String input) {
+        private void edit(String member) {
             Statement stmt = null;
+            int result;
             try {
                 stmt=conn.createStatement();
-                System.out.println(input);
-                int answer = stmt.executeUpdate(input);
-                IO.write(answer+"");
+                System.out.println(member);
+                result = stmt.executeUpdate(member);
+                SU.write(result+"");
 
             } catch (SQLException e) {
-                IO.write("-1");
+                SU.write("-1");
             } finally {
                 try {
                     stmt.close();
@@ -197,80 +205,75 @@ class ThreadedDataObjectServer {
             }
         }
 
-        private void connectToDB() {
+        private void DBconnect() {
         	String url = "sql2.njit.edu";
     		String ucid = "cmb45";	//your ucid
     		String dbpassword = "XJJiDhyL";	//your MySQL password
 
-
-    		System.out.println("This example program will create a table in MySQL and "+
-    			"populate that table with three rows of sample data. The program " +
-    			"will then query the database for the contents of the table and " +
-    			"display the result.");
-
-    		System.out.println("Starting test . . .");
-
-
-    		System.out.println("Loading driver . . .");
     		try {
     			Class.forName("org.gjt.mm.mysql.Driver").newInstance();
     		}
     		catch (Exception e) {
-    			System.err.println("Unable to load driver.");
+    			System.err.println("NO.");
     			e.printStackTrace();
     		}
-    		System.out.println("Driver loaded.");
-    		System.out.println("Establishing connection . . . ");
+    		
+    		
     		try {
-    			Connection conn;
-
     			conn = DriverManager.getConnection("jdbc:mysql://"+url+"/"+ucid+"?user="+ucid+"&password="+dbpassword);
-
-    			System.out.println("Connection established.");
-    			System.out.println("Creating a Statement object . . . ");
+    			System.out.println("IN");
     		}
     		catch (SQLException E) {
-    			System.out.println("SQLException: " + E.getMessage());
-    			System.out.println("SQLState:     " + E.getSQLState());
-    			System.out.println("VendorError:  " + E.getErrorCode());
+    			
     		}
     	}
 
-        private void CMD_login(String input) {
-            //check the DB to see if the user is allowed in and what there role is: -1: no logged in, 1 user, 2 admin
+        private void signin(String member) {
+            String[] inarray=member.split(",");
 
-            String[] INPUT=input.split(",");
-
+            System.out.println("SELECT admin FROM cmb45.USER where username='"+inarray[0]+"' and password='"+inarray[1]+"';");
+        
             Statement stmt = null;
             ResultSet rs = null;
             try {
                 stmt=conn.createStatement();
-                rs=stmt.executeQuery("SELECT admin FROM cmb45.USER where " +
-                        "username='"+INPUT[0]+"' and " +
-                        "password='"+INPUT[1]+"';");
-
+               
+                rs=stmt.executeQuery("SELECT admin FROM cmb45.USER where username='"+inarray[0]+"' and password='"+inarray[1]+"';");
                 rs.next();
-                String answer=rs.getString("admin");
-                System.out.println("answer:"+answer);
-                if(!answer.equals(null)) {//sets the current user
-                    USER = INPUT[0];
-
-                    if(answer.equals("Y")) {
-                        IS_ADMIN=true;
-                        IO.write("2");
-                    } else {
-                        IS_ADMIN=false;
-                        IO.write("1");
+                                
+                String admin=rs.getString("admin");
+                System.out.println("answer:"+admin);
+                if(!admin.equals(null)) {
+                	member = inarray[0];
+                	if(admin.equals("Y")) 
+                    {
+                        admincheck=true;
+                        SU.write("2");
                     }
-                } else
-                    IO.write("-1");
-            } catch (SQLException e) {
-                IO.write("-1");
-            } finally {
-                try {
+                    else 
+                    {
+                        admincheck=false;
+                        SU.write("1");
+                    }
+                } 
+                else
+                {
+                    SU.write("-1");
+                }
+            } 
+            catch (SQLException e)
+            {
+                SU.write("-1");
+            } 
+            finally 
+            {
+                try 
+                {
                     stmt.close();
                     rs.close();
-                } catch (SQLException e) {
+                } 
+                catch (SQLException e)
+                {
                     e.printStackTrace();
                 }
             }
