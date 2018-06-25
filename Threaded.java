@@ -10,10 +10,9 @@ class ThreadedDataObjectServer {
         try {
             ServerSocket s = new ServerSocket(4010);//listening
 
-            //noinspection InfiniteLoopStatement
             while (true) {
-                Socket incoming = s.accept( );//getting a connection
-                new ThreadedDataObjectHandler(incoming).start();//starting a new thread
+                Socket incoming = s.accept( );
+                new ThreadedDataObjectHandler(incoming).start();
             }
         }
         catch (Exception e) {
@@ -54,7 +53,7 @@ class ThreadedDataObjectServer {
 
                 System.out.println("CMD input: "+inarray[0]+" parms: "+inarray[1]==null? "": inarray[1]);
                 
-                switch (inarray[0]){//CMD switch
+                switch (inarray[0]){
                 
                     case "LOGIN":
                         System.out.println("CMD: login  "+inarray[0]+" parms: "+inarray[1]);
