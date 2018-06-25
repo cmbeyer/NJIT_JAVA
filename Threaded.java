@@ -171,7 +171,7 @@ class ThreadedDataObjectServer {
             try {
             	System.out.println("INSERT INTO cmb45.USER (username, password, admin) VALUES ("+input+", 'N');");
                 stmt=conn.createStatement();
-                int result =stmt.executeUpdate("INSERT INTO cmb45.USER (username, password, admin) VALUES ('"+input+"', 'N');");
+                int result = stmt.executeUpdate("INSERT INTO cmb45.USER (username, password, admin) VALUES ("+input+", 'N');");
                 System.out.println("Result:  "+result);
                 SU.write(result+"");
             } catch (SQLException e) {
